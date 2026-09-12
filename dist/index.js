@@ -1,17 +1,22 @@
-import express from "express";
-import cors from "cors";
-import dotenv from "dotenv";
-import mongoose from "mongoose";
-import authRoutes from "./routes/authRoutes";
-import siteRoutes from "./routes/siteRoutes";
-import categoryRoutes from "./routes/categoryRoutes";
-import inventoryRoutes from "./routes/inventoryRoutes";
-import installationRoutes from "./routes/installationRoutes";
-import budgetRoutes from "./routes/budgetRoutes";
-import reportRoutes from "./routes/reportRoutes";
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const cors_1 = __importDefault(require("cors"));
+const dotenv_1 = __importDefault(require("dotenv"));
+const mongoose_1 = __importDefault(require("mongoose"));
+const authRoutes_1 = __importDefault(require("./routes/authRoutes"));
+const siteRoutes_1 = __importDefault(require("./routes/siteRoutes"));
+const categoryRoutes_1 = __importDefault(require("./routes/categoryRoutes"));
+const inventoryRoutes_1 = __importDefault(require("./routes/inventoryRoutes"));
+const installationRoutes_1 = __importDefault(require("./routes/installationRoutes"));
+const budgetRoutes_1 = __importDefault(require("./routes/budgetRoutes"));
+const reportRoutes_1 = __importDefault(require("./routes/reportRoutes"));
 // Load environment variables
-dotenv.config();
-const app = express();
+dotenv_1.default.config();
+const app = (0, express_1.default)();
 const PORT = process.env.PORT || 5000;
 // ============================================================
 // CORS Configuration
@@ -22,7 +27,7 @@ const allowedOrigins = [
     "http://localhost:3000",
     "http://localhost:5173",
 ];
-app.use(cors({
+app.use((0, cors_1.default)({
     origin: function (origin, callback) {
         if (!origin)
             return callback(null, true);
@@ -38,15 +43,15 @@ app.use(cors({
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
 }));
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+app.use(express_1.default.json({ limit: "10mb" }));
+app.use(express_1.default.urlencoded({ extended: true, limit: "10mb" }));
 // ============================================================
 // MongoDB Connection
 // ============================================================
 const connectDB = async () => {
     try {
         const uri = process.env.MONGODB_URI || "mongodb://localhost:27017/inventory_db";
-        const conn = await mongoose.connect(uri);
+        const conn = await mongoose_1.default.connect(uri);
         console.log(`✅ MongoDB connected: ${conn.connection.host}`);
         console.log(`📁 Database: ${conn.connection.name}`);
     }
@@ -59,13 +64,13 @@ connectDB();
 // ============================================================
 // API Routes
 // ============================================================
-app.use("/api/auth", authRoutes);
-app.use("/api/sites", siteRoutes);
-app.use("/api/categories", categoryRoutes);
-app.use("/api/inventory", inventoryRoutes);
-app.use("/api/installations", installationRoutes);
-app.use("/api/budget", budgetRoutes);
-app.use("/api/reports", reportRoutes);
+app.use("/api/auth", authRoutes_1.default);
+app.use("/api/sites", siteRoutes_1.default);
+app.use("/api/categories", categoryRoutes_1.default);
+app.use("/api/inventory", inventoryRoutes_1.default);
+app.use("/api/installations", installationRoutes_1.default);
+app.use("/api/budget", budgetRoutes_1.default);
+app.use("/api/reports", reportRoutes_1.default);
 // ============================================================
 // Health Check
 // ============================================================

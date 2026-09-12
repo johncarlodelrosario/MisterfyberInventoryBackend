@@ -1,13 +1,19 @@
-import ExcelJS from "exceljs";
-import PDFDocument from "pdfkit";
-import Installation from "../models/Installation";
-import Budget from "../models/Budget";
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.generatePDFReport = exports.generateExcelReport = void 0;
+const exceljs_1 = __importDefault(require("exceljs"));
+const pdfkit_1 = __importDefault(require("pdfkit"));
+const Installation_1 = __importDefault(require("../models/Installation"));
+const Budget_1 = __importDefault(require("../models/Budget"));
 /**
  * Fetch installations matching the filter and flatten each `items[]` entry
  * into one report row per item.
  */
 const buildReportRows = async (filter) => {
-    const installations = await Installation.find(filter)
+    const installations = await Installation_1.default.find(filter)
         .populate("items.inventoryId", "name price unit")
         .populate("siteId", "name location")
         .sort({ date: -1 });
@@ -55,7 +61,7 @@ const buildReportRows = async (filter) => {
     return { rows, totalAmount, siteName };
 };
 // ---- Excel Report ------------------------------------------------------
-export const generateExcelReport = async (req, res) => {
+const generateExcelReport = async (req, res) => {
     try {
         const { siteId, startDate, endDate } = req.query;
         const filter = {};
@@ -68,7 +74,7 @@ export const generateExcelReport = async (req, res) => {
             };
         }
         const { rows, totalAmount } = await buildReportRows(filter);
-        const workbook = new ExcelJS.Workbook();
+        const workbook = new exceljs_1.default.Workbook();
         const worksheet = workbook.addWorksheet("Inventory Report");
         worksheet.columns = [
             { header: "Date", key: "date", width: 15 },
@@ -105,8 +111,9 @@ export const generateExcelReport = async (req, res) => {
         res.status(500).json({ error: "Error generating Excel report" });
     }
 };
+exports.generateExcelReport = generateExcelReport;
 // ---- PDF Report --------------------------------------------------------
-export const generatePDFReport = async (req, res) => {
+const generatePDFReport = async (req, res) => {
     try {
         const { siteId, startDate, endDate } = req.query;
         const filter = {};
@@ -122,9 +129,9 @@ export const generatePDFReport = async (req, res) => {
         // Get budget info (only meaningful when a specific site is requested)
         let budgetInfo = null;
         if (siteId) {
-            budgetInfo = await Budget.findOne({ siteId });
+            budgetInfo = await Budget_1.default.findOne({ siteId });
         }
-        const doc = new PDFDocument({
+        const doc = new pdfkit_1.default({
             size: "A4",
             margin: 50,
         });
@@ -204,3 +211,4 @@ export const generatePDFReport = async (req, res) => {
         res.status(500).json({ error: "Error generating PDF report" });
     }
 };
+exports.generatePDFReport = generatePDFReport;

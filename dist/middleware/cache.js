@@ -1,6 +1,9 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.cacheMiddleware = exports.cache = void 0;
 // Simple in-memory cache
 const cacheStore = new Map();
-export const cache = {
+exports.cache = {
     get: (key) => {
         const item = cacheStore.get(key);
         if (!item)
@@ -30,14 +33,14 @@ export const cache = {
         cacheStore.clear();
     },
 };
-export const cacheMiddleware = (duration = 300) => {
+const cacheMiddleware = (duration = 300) => {
     return (req, res, next) => {
         // Skip caching for non-GET requests
         if (req.method !== "GET") {
             return next();
         }
         const key = `__express__${req.originalUrl || req.url}`;
-        const cachedResponse = cache.get(key);
+        const cachedResponse = exports.cache.get(key);
         if (cachedResponse) {
             console.log(`Cache hit for: ${key}`);
             return res.json(cachedResponse);
@@ -48,7 +51,7 @@ export const cacheMiddleware = (duration = 300) => {
         res.json = function (body) {
             // Only cache successful responses
             if (res.statusCode === 200) {
-                cache.set(key, body, duration);
+                exports.cache.set(key, body, duration);
                 console.log(`Cached response for: ${key}`);
             }
             return originalJson(body);
@@ -56,3 +59,4 @@ export const cacheMiddleware = (duration = 300) => {
         next();
     };
 };
+exports.cacheMiddleware = cacheMiddleware;

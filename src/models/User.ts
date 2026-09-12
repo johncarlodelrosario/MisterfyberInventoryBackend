@@ -30,7 +30,7 @@ const UserSchema = new Schema<IUser>(
       type: String,
       required: [true, "Password is required"],
       minlength: [6, "Password must be at least 6 characters"],
-      select: false, // ✅ Hide password by default
+      select: false,
     },
     role: {
       type: String,
@@ -43,7 +43,6 @@ const UserSchema = new Schema<IUser>(
   },
 );
 
-// Hash password before saving
 UserSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
 
@@ -56,7 +55,6 @@ UserSchema.pre("save", async function (next) {
   }
 });
 
-// Compare password method
 UserSchema.methods.comparePassword = async function (
   candidatePassword: string,
 ): Promise<boolean> {
@@ -68,7 +66,6 @@ UserSchema.methods.comparePassword = async function (
   }
 };
 
-// Remove password when converting to JSON
 UserSchema.set("toJSON", {
   transform: function (doc, ret) {
     delete ret.password;
@@ -76,6 +73,5 @@ UserSchema.set("toJSON", {
   },
 });
 
-// Create and export the model
 const User = mongoose.models.User || mongoose.model<IUser>("User", UserSchema);
 export default User;

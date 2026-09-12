@@ -1,16 +1,22 @@
-import Budget from "../models/Budget";
-import { cache, CACHE_KEYS } from "../config/cache";
-export const createOrUpdateBudget = async (req, res) => {
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.addTransaction = exports.getBudget = exports.createOrUpdateBudget = void 0;
+const Budget_1 = __importDefault(require("../models/Budget"));
+const cache_1 = require("../config/cache");
+const createOrUpdateBudget = async (req, res) => {
     try {
         const { siteId, totalBudget } = req.body;
-        let budget = await Budget.findOne({ siteId });
+        let budget = await Budget_1.default.findOne({ siteId });
         if (budget) {
             budget.totalBudget = totalBudget;
             budget.lastUpdated = new Date();
             await budget.save();
         }
         else {
-            budget = new Budget({
+            budget = new Budget_1.default({
                 siteId,
                 totalBudget,
                 spent: 0,
@@ -18,39 +24,41 @@ export const createOrUpdateBudget = async (req, res) => {
             });
             await budget.save();
         }
-        cache.del(CACHE_KEYS.BUDGET);
+        cache_1.cache.del(cache_1.CACHE_KEYS.BUDGET);
         res.json(budget);
     }
     catch (error) {
         res.status(500).json({ error: "Error creating/updating budget" });
     }
 };
-export const getBudget = async (req, res) => {
+exports.createOrUpdateBudget = createOrUpdateBudget;
+const getBudget = async (req, res) => {
     try {
         const siteId = req.query.siteId;
         if (!siteId) {
             return res.status(400).json({ error: "Site ID is required" });
         }
-        const cacheKey = `${CACHE_KEYS.BUDGET}_${siteId}`;
-        const cachedData = cache.get(cacheKey);
+        const cacheKey = `${cache_1.CACHE_KEYS.BUDGET}_${siteId}`;
+        const cachedData = cache_1.cache.get(cacheKey);
         if (cachedData) {
             return res.json(cachedData);
         }
-        const budget = await Budget.findOne({ siteId }).populate("siteId", "name");
+        const budget = await Budget_1.default.findOne({ siteId }).populate("siteId", "name");
         if (!budget) {
             return res.status(404).json({ error: "Budget not found" });
         }
-        cache.set(cacheKey, budget);
+        cache_1.cache.set(cacheKey, budget);
         res.json(budget);
     }
     catch (error) {
         res.status(500).json({ error: "Error fetching budget" });
     }
 };
-export const addTransaction = async (req, res) => {
+exports.getBudget = getBudget;
+const addTransaction = async (req, res) => {
     try {
         const { siteId, amount, description, type, inventoryId } = req.body;
-        const budget = await Budget.findOne({ siteId });
+        const budget = await Budget_1.default.findOne({ siteId });
         if (!budget) {
             return res.status(404).json({ error: "Budget not found" });
         }
@@ -68,10 +76,11 @@ export const addTransaction = async (req, res) => {
         budget.remaining = budget.totalBudget - budget.spent;
         budget.lastUpdated = new Date();
         await budget.save();
-        cache.del(CACHE_KEYS.BUDGET);
+        cache_1.cache.del(cache_1.CACHE_KEYS.BUDGET);
         res.json(budget);
     }
     catch (error) {
         res.status(500).json({ error: "Error adding transaction" });
     }
 };
+exports.addTransaction = addTransaction;

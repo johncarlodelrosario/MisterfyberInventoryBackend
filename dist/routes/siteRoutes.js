@@ -1,14 +1,16 @@
-import { Router } from "express";
-import { createSite, getSites, getSiteById, updateSite, deleteSite, } from "../controllers/siteController";
-import { authenticate, isAdmin } from "../middleware/auth";
-const router = Router();
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const siteController_1 = require("../controllers/siteController");
+const auth_1 = require("../middleware/auth");
+const router = (0, express_1.Router)();
 // Apply authentication to all routes
-router.use(authenticate);
+router.use(auth_1.authenticate);
 // Public routes (authenticated users)
-router.get("/", getSites);
-router.get("/:id", getSiteById);
+router.get("/", siteController_1.getSites);
+router.get("/:id", siteController_1.getSiteById);
 // Admin only routes
-router.post("/", isAdmin, createSite);
-router.put("/:id", isAdmin, updateSite);
-router.delete("/:id", isAdmin, deleteSite);
-export default router;
+router.post("/", auth_1.isAdmin, siteController_1.createSite);
+router.put("/:id", auth_1.isAdmin, siteController_1.updateSite);
+router.delete("/:id", auth_1.isAdmin, siteController_1.deleteSite);
+exports.default = router;
