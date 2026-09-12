@@ -30,6 +30,7 @@ const UserSchema = new Schema<IUser>(
       type: String,
       required: [true, "Password is required"],
       minlength: [6, "Password must be at least 6 characters"],
+      select: false, // ✅ Hide password by default
     },
     role: {
       type: String,
@@ -55,7 +56,7 @@ UserSchema.pre("save", async function (next) {
   }
 });
 
-// Compare password method - FIXED: Use function declaration instead of arrow function
+// Compare password method
 UserSchema.methods.comparePassword = async function (
   candidatePassword: string,
 ): Promise<boolean> {
@@ -75,6 +76,6 @@ UserSchema.set("toJSON", {
   },
 });
 
-// Create and export the model properly
+// Create and export the model
 const User = mongoose.models.User || mongoose.model<IUser>("User", UserSchema);
 export default User;

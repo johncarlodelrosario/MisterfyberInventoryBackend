@@ -18,6 +18,7 @@ const UserSchema = new Schema({
         type: String,
         required: [true, "Password is required"],
         minlength: [6, "Password must be at least 6 characters"],
+        select: false, // ✅ Hide password by default
     },
     role: {
         type: String,
@@ -40,7 +41,7 @@ UserSchema.pre("save", async function (next) {
         next(error);
     }
 });
-// Compare password method - FIXED: Use function declaration instead of arrow function
+// Compare password method
 UserSchema.methods.comparePassword = async function (candidatePassword) {
     try {
         return await bcrypt.compare(candidatePassword, this.password);
@@ -57,6 +58,6 @@ UserSchema.set("toJSON", {
         return ret;
     },
 });
-// Create and export the model properly
+// Create and export the model
 const User = mongoose.models.User || mongoose.model("User", UserSchema);
 export default User;

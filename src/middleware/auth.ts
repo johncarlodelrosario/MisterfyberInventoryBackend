@@ -12,7 +12,6 @@ export const authenticate = async (
   next: NextFunction,
 ) => {
   try {
-    // Get token from Authorization header
     const authHeader = req.header("Authorization");
     console.log("Auth header present:", !!authHeader);
 
@@ -26,14 +25,12 @@ export const authenticate = async (
     const token = authHeader.replace("Bearer ", "");
     console.log("Token received, verifying...");
 
-    // Verify token
     const decoded = jwt.verify(
       token,
       process.env.JWT_SECRET || "your-secret-key",
     ) as any;
     console.log("Token decoded:", decoded);
 
-    // Find user by id
     const user = await User.findById(decoded.userId || decoded.id).select(
       "-password",
     );
@@ -46,7 +43,6 @@ export const authenticate = async (
       });
     }
 
-    // Attach user to request
     req.user = user;
     next();
   } catch (error: any) {
