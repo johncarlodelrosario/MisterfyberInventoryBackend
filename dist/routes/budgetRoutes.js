@@ -1,0 +1,12 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const budgetController_1 = require("../controllers/budgetController");
+const auth_1 = require("../middleware/auth");
+const cache_1 = require("../middleware/cache");
+const router = (0, express_1.Router)();
+router.use(auth_1.authenticate);
+router.post("/", auth_1.isAdmin, budgetController_1.createOrUpdateBudget);
+router.get("/", (0, cache_1.cacheMiddleware)(300), budgetController_1.getBudget);
+router.post("/transaction", auth_1.isAdmin, budgetController_1.addTransaction);
+exports.default = router;
