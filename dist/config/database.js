@@ -1,20 +1,14 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.connectDB = void 0;
-const mongoose_1 = __importDefault(require("mongoose"));
-const dotenv_1 = __importDefault(require("dotenv"));
-dotenv_1.default.config();
-const connectDB = async () => {
+import mongoose from 'mongoose';
+import dotenv from 'dotenv';
+dotenv.config();
+export const connectDB = async () => {
     try {
         const mongoURI = process.env.MONGODB_URI;
         if (!mongoURI) {
             throw new Error('MONGODB_URI is not defined in environment variables');
         }
         console.log('🔄 Connecting to MongoDB Atlas...');
-        const conn = await mongoose_1.default.connect(mongoURI, {
+        const conn = await mongoose.connect(mongoURI, {
             serverSelectionTimeoutMS: 30000,
             connectTimeoutMS: 30000,
             socketTimeoutMS: 60000,
@@ -27,13 +21,13 @@ const connectDB = async () => {
         console.log(`📊 Database: ${conn.connection.name}`);
         console.log(`🌐 Host: ${conn.connection.host}`);
         // Handle connection events
-        mongoose_1.default.connection.on('error', (err) => {
+        mongoose.connection.on('error', (err) => {
             console.error('❌ MongoDB connection error:', err);
         });
-        mongoose_1.default.connection.on('disconnected', () => {
+        mongoose.connection.on('disconnected', () => {
             console.log('⚠️ MongoDB disconnected. Attempting to reconnect...');
         });
-        mongoose_1.default.connection.on('reconnected', () => {
+        mongoose.connection.on('reconnected', () => {
             console.log('✅ MongoDB reconnected successfully');
         });
         return conn;
@@ -48,4 +42,3 @@ const connectDB = async () => {
         process.exit(1);
     }
 };
-exports.connectDB = connectDB;

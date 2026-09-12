@@ -1,12 +1,6 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.getInventoryValueBySite = exports.getInventoryBySite = exports.getSiteInventoryDetails = exports.getDailyInstallations = exports.deleteInstallation = exports.updateInstallationStatus = exports.getInstallations = exports.createInstallation = void 0;
-const mongoose_1 = __importDefault(require("mongoose"));
-const Installation_1 = __importDefault(require("../models/Installation"));
-const Inventory_1 = __importDefault(require("../models/Inventory"));
+import mongoose from "mongoose";
+import Installation from "../models/Installation";
+import Inventory from "../models/Inventory";
 // Helper: Safely get a number from either a Map or plain object
 const getNumericValue = (container, key, defaultValue = 0) => {
     if (!container)
@@ -26,10 +20,10 @@ const getNumericValue = (container, key, defaultValue = 0) => {
 // Helper: deduct quantity for a list of items at a site - OPTIMIZED with bulk operations
 const deductItemsFromInventory = async (items, siteId) => {
     const siteIdStr = siteId.toString();
-    const siteObjectId = new mongoose_1.default.Types.ObjectId(siteId);
+    const siteObjectId = new mongoose.Types.ObjectId(siteId);
     // Fetch all inventory items in parallel
     const inventoryIds = items.map((item) => item.inventoryId);
-    const inventories = await Inventory_1.default.find({
+    const inventories = await Inventory.find({
         _id: { $in: inventoryIds },
     }).lean();
     const inventoryMap = new Map(inventories.map((inv) => [inv._id.toString(), inv]));
@@ -61,7 +55,7 @@ const deductItemsFromInventory = async (items, siteId) => {
     }
     // Execute all updates in a single bulk operation
     if (bulkOps.length > 0) {
-        await Inventory_1.default.bulkWrite(bulkOps, { ordered: false });
+        await Inventory.bulkWrite(bulkOps, { ordered: false });
     }
 };
 // Helper: restore quantity for a list of items at a site (used when deleting installations)
@@ -80,10 +74,10 @@ const restoreItemsToInventory = async (items, siteId) => {
         });
     }
     if (bulkOps.length > 0) {
-        await Inventory_1.default.bulkWrite(bulkOps, { ordered: false });
+        await Inventory.bulkWrite(bulkOps, { ordered: false });
     }
 };
-const createInstallation = async (req, res) => {
+export const createInstallation = async (req, res) => {
     try {
         const { items, siteId, scheduledDate, notes } = req.body;
         // Fast validation
@@ -111,7 +105,7 @@ const createInstallation = async (req, res) => {
                 return res.status(400).json({ error: err.message });
             }
         }
-        const installation = new Installation_1.default({
+        const installation = new Installation({
             items: items.map((i) => ({
                 inventoryId: i.inventoryId,
                 quantity: i.quantity,
@@ -125,7 +119,7 @@ const createInstallation = async (req, res) => {
         });
         await installation.save();
         // Populate and return immediately
-        const populated = await Installation_1.default.findById(installation._id)
+        const populated = await Installation.findById(installation._id)
             .populate("items.inventoryId", "name unit")
             .populate("siteId", "name")
             .populate("installedBy", "username")
@@ -137,8 +131,7 @@ const createInstallation = async (req, res) => {
         res.status(500).json({ error: "Error creating installation" });
     }
 };
-exports.createInstallation = createInstallation;
-const getInstallations = async (req, res) => {
+export const getInstallations = async (req, res) => {
     try {
         const page = Math.max(1, parseInt(req.query.page) || 1);
         const limit = Math.min(100, parseInt(req.query.limit) || 10);
@@ -148,7 +141,7 @@ const getInstallations = async (req, res) => {
         const date = req.query.date;
         const filter = {};
         if (siteId)
-            filter.siteId = new mongoose_1.default.Types.ObjectId(siteId);
+            filter.siteId = new mongoose.Types.ObjectId(siteId);
         if (status)
             filter.status = status;
         if (date) {
@@ -160,7 +153,7 @@ const getInstallations = async (req, res) => {
         }
         // Ultra-fast: use lean() and parallel queries
         const [installations, total] = await Promise.all([
-            Installation_1.default.find(filter)
+            Installation.find(filter)
                 .select("-__v")
                 .populate("items.inventoryId", "name price unit")
                 .populate("siteId", "name")
@@ -169,7 +162,7 @@ const getInstallations = async (req, res) => {
                 .skip(skip)
                 .limit(limit)
                 .lean(),
-            Installation_1.default.countDocuments(filter),
+            Installation.countDocuments(filter),
         ]);
         // Set cache headers for browser caching (but not server cache)
         res.set("Cache-Control", "private, max-age=10");
@@ -188,8 +181,7 @@ const getInstallations = async (req, res) => {
         res.status(500).json({ error: "Error fetching installations" });
     }
 };
-exports.getInstallations = getInstallations;
-const updateInstallationStatus = async (req, res) => {
+export const updateInstallationStatus = async (req, res) => {
     try {
         const { status } = req.body;
         const { id } = req.params;
@@ -197,7 +189,7 @@ const updateInstallationStatus = async (req, res) => {
             return res.status(400).json({ error: "Invalid status" });
         }
         // Fast fetch with lean
-        const installation = await Installation_1.default.findById(id).lean();
+        const installation = await Installation.findById(id).lean();
         if (!installation) {
             return res.status(404).json({ error: "Installation not found" });
         }
@@ -218,7 +210,7 @@ const updateInstallationStatus = async (req, res) => {
         if (status === "completed" && installation.status === "scheduled") {
             updateData.date = new Date();
         }
-        const updated = await Installation_1.default.findByIdAndUpdate(id, updateData, {
+        const updated = await Installation.findByIdAndUpdate(id, updateData, {
             new: true,
             lean: true,
         })
@@ -232,16 +224,15 @@ const updateInstallationStatus = async (req, res) => {
         res.status(500).json({ error: "Error updating installation" });
     }
 };
-exports.updateInstallationStatus = updateInstallationStatus;
 // NEW: Delete installation
-const deleteInstallation = async (req, res) => {
+export const deleteInstallation = async (req, res) => {
     try {
         const { id } = req.params;
-        if (!mongoose_1.default.Types.ObjectId.isValid(id)) {
+        if (!mongoose.Types.ObjectId.isValid(id)) {
             return res.status(400).json({ error: "Invalid installation ID" });
         }
         // Fast fetch with lean
-        const installation = await Installation_1.default.findById(id).lean();
+        const installation = await Installation.findById(id).lean();
         if (!installation) {
             return res.status(404).json({ error: "Installation not found" });
         }
@@ -260,7 +251,7 @@ const deleteInstallation = async (req, res) => {
             }
         }
         // Delete the installation
-        await Installation_1.default.findByIdAndDelete(id);
+        await Installation.findByIdAndDelete(id);
         res.json({
             success: true,
             message: "Installation deleted successfully",
@@ -272,8 +263,7 @@ const deleteInstallation = async (req, res) => {
         res.status(500).json({ error: "Error deleting installation" });
     }
 };
-exports.deleteInstallation = deleteInstallation;
-const getDailyInstallations = async (req, res) => {
+export const getDailyInstallations = async (req, res) => {
     try {
         const { date } = req.query;
         const targetDate = date ? new Date(date) : new Date();
@@ -281,7 +271,7 @@ const getDailyInstallations = async (req, res) => {
         const nextDate = new Date(targetDate);
         nextDate.setDate(nextDate.getDate() + 1);
         // Use aggregation for ultra-fast daily stats
-        const result = await Installation_1.default.aggregate([
+        const result = await Installation.aggregate([
             {
                 $match: {
                     date: { $gte: targetDate, $lt: nextDate },
@@ -357,19 +347,18 @@ const getDailyInstallations = async (req, res) => {
         res.status(500).json({ error: "Error fetching daily installations" });
     }
 };
-exports.getDailyInstallations = getDailyInstallations;
 // ---- Helper endpoints (optimized) ----
-const getSiteInventoryDetails = async (req, res) => {
+export const getSiteInventoryDetails = async (req, res) => {
     try {
         const { inventoryId, siteId } = req.params;
-        const inventory = await Inventory_1.default.findById(inventoryId)
+        const inventory = await Inventory.findById(inventoryId)
             .populate("categoryId", "name")
             .populate("siteIds", "name")
             .lean();
         if (!inventory) {
             return res.status(404).json({ error: "Inventory item not found" });
         }
-        const siteObjectId = new mongoose_1.default.Types.ObjectId(siteId);
+        const siteObjectId = new mongoose.Types.ObjectId(siteId);
         const siteExists = inventory.siteIds.some((id) => {
             if (!id)
                 return false;
@@ -407,8 +396,7 @@ const getSiteInventoryDetails = async (req, res) => {
         res.status(500).json({ error: "Error fetching site inventory details" });
     }
 };
-exports.getSiteInventoryDetails = getSiteInventoryDetails;
-const getInventoryBySite = async (req, res) => {
+export const getInventoryBySite = async (req, res) => {
     try {
         const { siteId } = req.params;
         const page = Math.max(1, parseInt(req.query.page) || 1);
@@ -418,20 +406,20 @@ const getInventoryBySite = async (req, res) => {
         if (!siteId) {
             return res.status(400).json({ error: "Site ID is required" });
         }
-        const siteObjectId = new mongoose_1.default.Types.ObjectId(siteId);
+        const siteObjectId = new mongoose.Types.ObjectId(siteId);
         const filter = { siteIds: { $in: [siteObjectId] } };
         if (search) {
             filter.name = { $regex: search, $options: "i" };
         }
         const [inventory, total] = await Promise.all([
-            Inventory_1.default.find(filter)
+            Inventory.find(filter)
                 .select("name categoryId unit description quantities prices minQuantities lastUpdated")
                 .populate("categoryId", "name")
                 .sort({ name: 1 })
                 .skip(skip)
                 .limit(limit)
                 .lean(),
-            Inventory_1.default.countDocuments(filter),
+            Inventory.countDocuments(filter),
         ]);
         const siteIdStr = siteId.toString();
         const formattedInventory = inventory.map((item) => {
@@ -468,17 +456,16 @@ const getInventoryBySite = async (req, res) => {
         res.status(500).json({ error: "Error fetching inventory by site" });
     }
 };
-exports.getInventoryBySite = getInventoryBySite;
-const getInventoryValueBySite = async (req, res) => {
+export const getInventoryValueBySite = async (req, res) => {
     try {
         const { siteId } = req.params;
         if (!siteId) {
             return res.status(400).json({ error: "Site ID is required" });
         }
-        const siteObjectId = new mongoose_1.default.Types.ObjectId(siteId);
+        const siteObjectId = new mongoose.Types.ObjectId(siteId);
         const siteIdStr = siteId.toString();
         // Use aggregation for ultra-fast value calculation
-        const result = await Inventory_1.default.aggregate([
+        const result = await Inventory.aggregate([
             { $match: { siteIds: { $in: [siteObjectId] } } },
             {
                 $project: {
@@ -523,4 +510,3 @@ const getInventoryValueBySite = async (req, res) => {
         res.status(500).json({ error: "Error fetching inventory value by site" });
     }
 };
-exports.getInventoryValueBySite = getInventoryValueBySite;

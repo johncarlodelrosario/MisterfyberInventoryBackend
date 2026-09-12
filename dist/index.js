@@ -1,36 +1,53 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const express_1 = __importDefault(require("express"));
-const cors_1 = __importDefault(require("cors"));
-const dotenv_1 = __importDefault(require("dotenv"));
-const mongoose_1 = __importDefault(require("mongoose"));
-const authRoutes_1 = __importDefault(require("./routes/authRoutes"));
-const siteRoutes_1 = __importDefault(require("./routes/siteRoutes"));
-const categoryRoutes_1 = __importDefault(require("./routes/categoryRoutes"));
-const inventoryRoutes_1 = __importDefault(require("./routes/inventoryRoutes"));
-const installationRoutes_1 = __importDefault(require("./routes/installationRoutes"));
-const budgetRoutes_1 = __importDefault(require("./routes/budgetRoutes"));
-const reportRoutes_1 = __importDefault(require("./routes/reportRoutes"));
-dotenv_1.default.config();
-const app = (0, express_1.default)();
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import mongoose from "mongoose";
+import authRoutes from "./routes/authRoutes";
+import siteRoutes from "./routes/siteRoutes";
+import categoryRoutes from "./routes/categoryRoutes";
+import inventoryRoutes from "./routes/inventoryRoutes";
+import installationRoutes from "./routes/installationRoutes";
+import budgetRoutes from "./routes/budgetRoutes";
+import reportRoutes from "./routes/reportRoutes";
+// Load environment variables
+dotenv.config();
+const app = express();
 const PORT = process.env.PORT || 5000;
-// Middleware
-app.use((0, cors_1.default)({
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+// ============================================================
+// CORS Configuration
+// ============================================================
+const allowedOrigins = [
+    process.env.FRONTEND_URL || "http://localhost:3000",
+    "https://misterfyberinventory.vercel.app",
+    "http://localhost:3000",
+    "http://localhost:5173",
+];
+app.use(cors({
+    origin: function (origin, callback) {
+        if (!origin)
+            return callback(null, true);
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        }
+        else {
+            console.warn(`⚠️ CORS blocked origin: ${origin}`);
+            callback(new Error("Not allowed by CORS"));
+        }
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
 }));
-app.use(express_1.default.json());
-app.use(express_1.default.urlencoded({ extended: true }));
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+// ============================================================
 // MongoDB Connection
+// ============================================================
 const connectDB = async () => {
     try {
-        const conn = await mongoose_1.default.connect(process.env.MONGODB_URI || "mongodb://localhost:27017/inventory_db");
-        console.log(`✅ MongoDB connected successfully to: ${conn.connection.host}`);
+        const uri = process.env.MONGODB_URI || "mongodb://localhost:27017/inventory_db";
+        const conn = await mongoose.connect(uri);
+        console.log(`✅ MongoDB connected: ${conn.connection.host}`);
         console.log(`📁 Database: ${conn.connection.name}`);
     }
     catch (error) {
@@ -38,17 +55,20 @@ const connectDB = async () => {
         process.exit(1);
     }
 };
-// Connect to MongoDB
 connectDB();
-// Routes
-app.use("/api/auth", authRoutes_1.default);
-app.use("/api/sites", siteRoutes_1.default);
-app.use("/api/categories", categoryRoutes_1.default);
-app.use("/api/inventory", inventoryRoutes_1.default);
-app.use("/api/installations", installationRoutes_1.default);
-app.use("/api/budget", budgetRoutes_1.default);
-app.use("/api/reports", reportRoutes_1.default);
-// Health check
+// ============================================================
+// API Routes
+// ============================================================
+app.use("/api/auth", authRoutes);
+app.use("/api/sites", siteRoutes);
+app.use("/api/categories", categoryRoutes);
+app.use("/api/inventory", inventoryRoutes);
+app.use("/api/installations", installationRoutes);
+app.use("/api/budget", budgetRoutes);
+app.use("/api/reports", reportRoutes);
+// ============================================================
+// Health Check
+// ============================================================
 app.get("/", (req, res) => {
     res.json({
         success: true,
@@ -66,17 +86,20 @@ app.get("/", (req, res) => {
         },
     });
 });
-// 404 handler
+// ============================================================
+// 404 Handler
+// ============================================================
 app.use((req, res) => {
     res.status(404).json({
         success: false,
         error: `Route ${req.method} ${req.path} not found`,
     });
 });
-// Error handling middleware
+// ============================================================
+// Global Error Handler
+// ============================================================
 app.use((err, req, res, next) => {
     console.error("❌ Error:", err.stack);
-    // Handle specific error types
     if (err.name === "ValidationError") {
         return res.status(400).json({
             success: false,
@@ -97,7 +120,6 @@ app.use((err, req, res, next) => {
             field: Object.keys(err.keyPattern)[0],
         });
     }
-    // JWT errors
     if (err.name === "JsonWebTokenError") {
         return res.status(401).json({
             success: false,
@@ -110,7 +132,12 @@ app.use((err, req, res, next) => {
             error: "Token expired",
         });
     }
-    // Send appropriate error response
+    if (err.message === "Not allowed by CORS") {
+        return res.status(403).json({
+            success: false,
+            error: "CORS policy: Origin not allowed",
+        });
+    }
     const statusCode = err.status || 500;
     res.status(statusCode).json({
         success: false,
@@ -120,29 +147,25 @@ app.use((err, req, res, next) => {
         ...(process.env.NODE_ENV === "development" && { stack: err.stack }),
     });
 });
-// Start server
+// ============================================================
+// Start Server
+// ============================================================
 app.listen(PORT, () => {
     console.log(`\n🚀 Server running on port ${PORT}`);
-    console.log(`📊 API: http://localhost:${PORT}`);
     console.log(`📁 Environment: ${process.env.NODE_ENV || "development"}`);
-    console.log(`🔗 Auth API: http://localhost:${PORT}/api/auth`);
-    console.log(`🔗 Sites API: http://localhost:${PORT}/api/sites`);
-    console.log(`🔗 Categories API: http://localhost:${PORT}/api/categories`);
-    console.log(`🔗 Inventory API: http://localhost:${PORT}/api/inventory`);
-    console.log(`🔗 Installations API: http://localhost:${PORT}/api/installations`);
-    console.log(`🔗 Budget API: http://localhost:${PORT}/api/budget`);
-    console.log(`🔗 Reports API: http://localhost:${PORT}/api/reports`);
+    console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL || "http://localhost:3000"}`);
     console.log(`\n✅ Server is ready to accept requests\n`);
 });
-// Handle unhandled promise rejections
+// ============================================================
+// Process Error Handlers
+// ============================================================
 process.on("unhandledRejection", (err) => {
     console.error("❌ Unhandled Rejection:", err.message);
-    // Close server & exit process
+    console.error(err.stack);
     process.exit(1);
 });
-// Handle uncaught exceptions
 process.on("uncaughtException", (err) => {
     console.error("❌ Uncaught Exception:", err.message);
-    // Close server & exit process
+    console.error(err.stack);
     process.exit(1);
 });

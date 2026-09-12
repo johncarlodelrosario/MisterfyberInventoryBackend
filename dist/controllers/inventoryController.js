@@ -1,19 +1,13 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.deductInventory = exports.deleteInventory = exports.updateInventory = exports.getInventoryById = exports.getInventory = exports.createInventory = void 0;
-const mongoose_1 = __importDefault(require("mongoose"));
-const Inventory_1 = __importDefault(require("../models/Inventory"));
-const Category_1 = __importDefault(require("../models/Category"));
-const Site_1 = __importDefault(require("../models/Site"));
-const createInventory = async (req, res) => {
+import mongoose from "mongoose";
+import Inventory from "../models/Inventory";
+import Category from "../models/Category";
+import Site from "../models/Site";
+export const createInventory = async (req, res) => {
     try {
         const { name, categoryId, siteData, unit, description } = req.body;
         // Validate category exists
         if (categoryId) {
-            const category = await Category_1.default.findById(categoryId);
+            const category = await Category.findById(categoryId);
             if (!category) {
                 return res.status(404).json({
                     success: false,
@@ -23,7 +17,7 @@ const createInventory = async (req, res) => {
         }
         // Validate all sites exist
         const siteIds = siteData.map((s) => s.siteId);
-        const sites = await Site_1.default.find({ _id: { $in: siteIds } });
+        const sites = await Site.find({ _id: { $in: siteIds } });
         if (sites.length !== siteIds.length) {
             return res.status(404).json({
                 success: false,
@@ -39,7 +33,7 @@ const createInventory = async (req, res) => {
             prices.set(s.siteId, s.price || 0);
             minQuantities.set(s.siteId, s.minQuantity || 0);
         });
-        const inventory = new Inventory_1.default({
+        const inventory = new Inventory({
             name,
             categoryId,
             siteIds: siteIds,
@@ -68,8 +62,7 @@ const createInventory = async (req, res) => {
         });
     }
 };
-exports.createInventory = createInventory;
-const getInventory = async (req, res) => {
+export const getInventory = async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
@@ -88,13 +81,13 @@ const getInventory = async (req, res) => {
             filter.siteIds = { $in: [siteId] };
         }
         const [inventory, total] = await Promise.all([
-            Inventory_1.default.find(filter)
+            Inventory.find(filter)
                 .populate("categoryId", "name")
                 .populate("siteIds", "name")
                 .sort({ createdAt: -1 })
                 .skip(skip)
                 .limit(limit),
-            Inventory_1.default.countDocuments(filter),
+            Inventory.countDocuments(filter),
         ]);
         // Format response with site-specific data
         const formattedInventory = inventory.map((item) => formatInventoryResponse(item));
@@ -118,10 +111,9 @@ const getInventory = async (req, res) => {
         });
     }
 };
-exports.getInventory = getInventory;
-const getInventoryById = async (req, res) => {
+export const getInventoryById = async (req, res) => {
     try {
-        const inventory = await Inventory_1.default.findById(req.params.id)
+        const inventory = await Inventory.findById(req.params.id)
             .populate("categoryId", "name")
             .populate("siteIds", "name");
         if (!inventory) {
@@ -144,11 +136,10 @@ const getInventoryById = async (req, res) => {
         });
     }
 };
-exports.getInventoryById = getInventoryById;
-const updateInventory = async (req, res) => {
+export const updateInventory = async (req, res) => {
     try {
         const { name, categoryId, siteData, unit, description } = req.body;
-        const inventory = await Inventory_1.default.findById(req.params.id);
+        const inventory = await Inventory.findById(req.params.id);
         if (!inventory) {
             return res.status(404).json({
                 success: false,
@@ -157,7 +148,7 @@ const updateInventory = async (req, res) => {
         }
         // Validate category exists if updating
         if (categoryId && categoryId !== inventory.categoryId?.toString()) {
-            const category = await Category_1.default.findById(categoryId);
+            const category = await Category.findById(categoryId);
             if (!category) {
                 return res.status(404).json({
                     success: false,
@@ -170,7 +161,7 @@ const updateInventory = async (req, res) => {
         if (siteData && Array.isArray(siteData) && siteData.length > 0) {
             // Validate all sites exist
             const siteIds = siteData.map((s) => s.siteId);
-            const sites = await Site_1.default.find({ _id: { $in: siteIds } });
+            const sites = await Site.find({ _id: { $in: siteIds } });
             if (sites.length !== siteIds.length) {
                 return res.status(404).json({
                     success: false,
@@ -217,10 +208,9 @@ const updateInventory = async (req, res) => {
         });
     }
 };
-exports.updateInventory = updateInventory;
-const deleteInventory = async (req, res) => {
+export const deleteInventory = async (req, res) => {
     try {
-        const inventory = await Inventory_1.default.findById(req.params.id);
+        const inventory = await Inventory.findById(req.params.id);
         if (!inventory) {
             return res.status(404).json({
                 success: false,
@@ -241,11 +231,10 @@ const deleteInventory = async (req, res) => {
         });
     }
 };
-exports.deleteInventory = deleteInventory;
-const deductInventory = async (req, res) => {
+export const deductInventory = async (req, res) => {
     try {
         const { siteId, quantity } = req.body;
-        const inventory = await Inventory_1.default.findById(req.params.id);
+        const inventory = await Inventory.findById(req.params.id);
         if (!inventory) {
             return res.status(404).json({
                 success: false,
@@ -253,7 +242,7 @@ const deductInventory = async (req, res) => {
             });
         }
         // Check if site exists in this inventory
-        const siteObjectId = new mongoose_1.default.Types.ObjectId(siteId);
+        const siteObjectId = new mongoose.Types.ObjectId(siteId);
         const siteExists = inventory.siteIds.some((id) => id.equals(siteObjectId));
         if (!siteExists) {
             return res.status(404).json({
@@ -286,7 +275,6 @@ const deductInventory = async (req, res) => {
         });
     }
 };
-exports.deductInventory = deductInventory;
 // Helper function to format inventory response
 const formatInventoryResponse = (inventory) => {
     const sitesData = inventory.siteIds.map((site) => {

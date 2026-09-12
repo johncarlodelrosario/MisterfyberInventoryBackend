@@ -1,15 +1,13 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const express_1 = require("express");
-const authController_1 = require("../controllers/authController");
-const auth_1 = require("../middleware/auth");
-const router = (0, express_1.Router)();
+import { Router } from "express";
+import { register, login, getProfile, getMe, logout, updateProfile, } from "../controllers/authController";
+import { authenticate } from "../middleware/auth";
+const router = Router();
 // Public routes
-router.post("/register", authController_1.register);
-router.post("/login", authController_1.login);
+router.post("/register", register);
+router.post("/login", login);
 // Protected routes (require authentication)
-router.get("/profile", auth_1.authenticate, authController_1.getProfile);
-router.get("/me", auth_1.authenticate, authController_1.getMe);
-router.post("/logout", auth_1.authenticate, authController_1.logout);
-router.put("/profile", auth_1.authenticate, authController_1.updateProfile);
-exports.default = router;
+router.get("/profile", authenticate, getProfile);
+router.get("/me", authenticate, getMe);
+router.post("/logout", authenticate, logout);
+router.put("/profile", authenticate, updateProfile);
+export default router;

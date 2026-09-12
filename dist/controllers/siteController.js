@@ -1,11 +1,5 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteSite = exports.updateSite = exports.getSiteById = exports.getSites = exports.createSite = void 0;
-const Site_1 = __importDefault(require("../models/Site"));
-const createSite = async (req, res) => {
+import Site from "../models/Site";
+export const createSite = async (req, res) => {
     try {
         console.log("Create site request body:", req.body);
         console.log("User from request:", req.user);
@@ -31,7 +25,7 @@ const createSite = async (req, res) => {
             });
         }
         // Check if site already exists
-        const existingSite = await Site_1.default.findOne({ name });
+        const existingSite = await Site.findOne({ name });
         if (existingSite) {
             return res.status(400).json({
                 success: false,
@@ -39,7 +33,7 @@ const createSite = async (req, res) => {
             });
         }
         // Create new site
-        const site = new Site_1.default({
+        const site = new Site({
             name: name.trim(),
             location: location.trim(),
             description: description ? description.trim() : "",
@@ -81,20 +75,19 @@ const createSite = async (req, res) => {
         });
     }
 };
-exports.createSite = createSite;
-const getSites = async (req, res) => {
+export const getSites = async (req, res) => {
     try {
         console.log("Get sites request");
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
         const [sites, total] = await Promise.all([
-            Site_1.default.find()
+            Site.find()
                 .populate("createdBy", "username")
                 .sort({ createdAt: -1 })
                 .skip(skip)
                 .limit(limit),
-            Site_1.default.countDocuments(),
+            Site.countDocuments(),
         ]);
         console.log(`Found ${sites.length} sites`);
         const response = {
@@ -117,10 +110,9 @@ const getSites = async (req, res) => {
         });
     }
 };
-exports.getSites = getSites;
-const getSiteById = async (req, res) => {
+export const getSiteById = async (req, res) => {
     try {
-        const site = await Site_1.default.findById(req.params.id).populate("createdBy", "username");
+        const site = await Site.findById(req.params.id).populate("createdBy", "username");
         if (!site) {
             return res.status(404).json({
                 success: false,
@@ -140,12 +132,11 @@ const getSiteById = async (req, res) => {
         });
     }
 };
-exports.getSiteById = getSiteById;
-const updateSite = async (req, res) => {
+export const updateSite = async (req, res) => {
     try {
         console.log("Update site request:", req.params.id, req.body);
         const { name, location, description, isActive } = req.body;
-        const site = await Site_1.default.findById(req.params.id);
+        const site = await Site.findById(req.params.id);
         if (!site) {
             return res.status(404).json({
                 success: false,
@@ -154,7 +145,7 @@ const updateSite = async (req, res) => {
         }
         // Check if name is being changed and if it already exists
         if (name && name !== site.name) {
-            const existingSite = await Site_1.default.findOne({ name });
+            const existingSite = await Site.findOne({ name });
             if (existingSite) {
                 return res.status(400).json({
                     success: false,
@@ -182,11 +173,10 @@ const updateSite = async (req, res) => {
         });
     }
 };
-exports.updateSite = updateSite;
-const deleteSite = async (req, res) => {
+export const deleteSite = async (req, res) => {
     try {
         console.log("Delete site request:", req.params.id);
-        const site = await Site_1.default.findById(req.params.id);
+        const site = await Site.findById(req.params.id);
         if (!site) {
             return res.status(404).json({
                 success: false,
@@ -207,4 +197,3 @@ const deleteSite = async (req, res) => {
         });
     }
 };
-exports.deleteSite = deleteSite;

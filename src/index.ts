@@ -11,32 +11,51 @@ import installationRoutes from "./routes/installationRoutes";
 import budgetRoutes from "./routes/budgetRoutes";
 import reportRoutes from "./routes/reportRoutes";
 
+// Load environment variables
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
+// ============================================================
+// CORS Configuration
+// ============================================================
+const allowedOrigins = [
+  process.env.FRONTEND_URL || "http://localhost:3000",
+  "https://misterfyberinventory.vercel.app",
+  "http://localhost:3000",
+  "http://localhost:5173",
+];
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        console.warn(`⚠️ CORS blocked origin: ${origin}`);
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+
+// ============================================================
 // MongoDB Connection
+// ============================================================
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(
-      process.env.MONGODB_URI || "mongodb://localhost:27017/inventory_db",
-    );
-    console.log(
-      `✅ MongoDB connected successfully to: ${conn.connection.host}`,
-    );
+    const uri =
+      process.env.MONGODB_URI || "mongodb://localhost:27017/inventory_db";
+    const conn = await mongoose.connect(uri);
+    console.log(`✅ MongoDB connected: ${conn.connection.host}`);
     console.log(`📁 Database: ${conn.connection.name}`);
   } catch (error) {
     console.error("❌ MongoDB connection error:", error);
@@ -44,10 +63,11 @@ const connectDB = async () => {
   }
 };
 
-// Connect to MongoDB
 connectDB();
 
-// Routes
+// ============================================================
+// API Routes
+// ============================================================
 app.use("/api/auth", authRoutes);
 app.use("/api/sites", siteRoutes);
 app.use("/api/categories", categoryRoutes);
@@ -56,7 +76,9 @@ app.use("/api/installations", installationRoutes);
 app.use("/api/budget", budgetRoutes);
 app.use("/api/reports", reportRoutes);
 
-// Health check
+// ============================================================
+// Health Check
+// ============================================================
 app.get("/", (req, res) => {
   res.json({
     success: true,
@@ -75,7 +97,9 @@ app.get("/", (req, res) => {
   });
 });
 
-// 404 handler
+// ============================================================
+// 404 Handler
+// ============================================================
 app.use((req: express.Request, res: express.Response) => {
   res.status(404).json({
     success: false,
@@ -83,7 +107,9 @@ app.use((req: express.Request, res: express.Response) => {
   });
 });
 
-// Error handling middleware
+// ============================================================
+// Global Error Handler
+// ============================================================
 app.use(
   (
     err: any,
@@ -93,7 +119,6 @@ app.use(
   ) => {
     console.error("❌ Error:", err.stack);
 
-    // Handle specific error types
     if (err.name === "ValidationError") {
       return res.status(400).json({
         success: false,
@@ -117,7 +142,6 @@ app.use(
       });
     }
 
-    // JWT errors
     if (err.name === "JsonWebTokenError") {
       return res.status(401).json({
         success: false,
@@ -132,7 +156,13 @@ app.use(
       });
     }
 
-    // Send appropriate error response
+    if (err.message === "Not allowed by CORS") {
+      return res.status(403).json({
+        success: false,
+        error: "CORS policy: Origin not allowed",
+      });
+    }
+
     const statusCode = err.status || 500;
     res.status(statusCode).json({
       success: false,
@@ -145,33 +175,29 @@ app.use(
   },
 );
 
-// Start server
+// ============================================================
+// Start Server
+// ============================================================
 app.listen(PORT, () => {
   console.log(`\n🚀 Server running on port ${PORT}`);
-  console.log(`📊 API: http://localhost:${PORT}`);
   console.log(`📁 Environment: ${process.env.NODE_ENV || "development"}`);
-  console.log(`🔗 Auth API: http://localhost:${PORT}/api/auth`);
-  console.log(`🔗 Sites API: http://localhost:${PORT}/api/sites`);
-  console.log(`🔗 Categories API: http://localhost:${PORT}/api/categories`);
-  console.log(`🔗 Inventory API: http://localhost:${PORT}/api/inventory`);
   console.log(
-    `🔗 Installations API: http://localhost:${PORT}/api/installations`,
+    `🌐 Frontend URL: ${process.env.FRONTEND_URL || "http://localhost:3000"}`,
   );
-  console.log(`🔗 Budget API: http://localhost:${PORT}/api/budget`);
-  console.log(`🔗 Reports API: http://localhost:${PORT}/api/reports`);
   console.log(`\n✅ Server is ready to accept requests\n`);
 });
 
-// Handle unhandled promise rejections
+// ============================================================
+// Process Error Handlers
+// ============================================================
 process.on("unhandledRejection", (err: any) => {
   console.error("❌ Unhandled Rejection:", err.message);
-  // Close server & exit process
+  console.error(err.stack);
   process.exit(1);
 });
 
-// Handle uncaught exceptions
 process.on("uncaughtException", (err: any) => {
   console.error("❌ Uncaught Exception:", err.message);
-  // Close server & exit process
+  console.error(err.stack);
   process.exit(1);
 });

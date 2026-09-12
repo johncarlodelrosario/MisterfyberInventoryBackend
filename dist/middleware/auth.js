@@ -1,12 +1,6 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.isAdmin = exports.authenticate = void 0;
-const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-const User_1 = __importDefault(require("../models/User"));
-const authenticate = async (req, res, next) => {
+import jwt from "jsonwebtoken";
+import User from "../models/User";
+export const authenticate = async (req, res, next) => {
     try {
         // Get token from Authorization header
         const authHeader = req.header("Authorization");
@@ -20,10 +14,10 @@ const authenticate = async (req, res, next) => {
         const token = authHeader.replace("Bearer ", "");
         console.log("Token received, verifying...");
         // Verify token
-        const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET || "your-secret-key");
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || "your-secret-key");
         console.log("Token decoded:", decoded);
         // Find user by id
-        const user = await User_1.default.findById(decoded.userId || decoded.id).select("-password");
+        const user = await User.findById(decoded.userId || decoded.id).select("-password");
         console.log("User found:", user ? "Yes" : "No");
         if (!user) {
             return res.status(401).json({
@@ -55,8 +49,7 @@ const authenticate = async (req, res, next) => {
         });
     }
 };
-exports.authenticate = authenticate;
-const isAdmin = async (req, res, next) => {
+export const isAdmin = async (req, res, next) => {
     try {
         console.log("Checking admin role for user:", req.user?.username);
         console.log("User role:", req.user?.role);
@@ -82,4 +75,3 @@ const isAdmin = async (req, res, next) => {
         });
     }
 };
-exports.isAdmin = isAdmin;

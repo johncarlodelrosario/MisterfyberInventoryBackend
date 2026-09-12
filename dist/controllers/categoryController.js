@@ -1,14 +1,8 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteCategory = exports.updateCategory = exports.createCategory = exports.getCategoryById = exports.getCategories = void 0;
-const Category_1 = __importDefault(require("../models/Category"));
+import Category from "../models/Category";
 // Get all categories
-const getCategories = async (req, res) => {
+export const getCategories = async (req, res) => {
     try {
-        const categories = await Category_1.default.find().sort({ name: 1 });
+        const categories = await Category.find().sort({ name: 1 });
         res.json({
             success: true,
             categories,
@@ -22,11 +16,10 @@ const getCategories = async (req, res) => {
         });
     }
 };
-exports.getCategories = getCategories;
 // Get single category by ID
-const getCategoryById = async (req, res) => {
+export const getCategoryById = async (req, res) => {
     try {
-        const category = await Category_1.default.findById(req.params.id);
+        const category = await Category.findById(req.params.id);
         if (!category) {
             return res.status(404).json({
                 success: false,
@@ -46,9 +39,8 @@ const getCategoryById = async (req, res) => {
         });
     }
 };
-exports.getCategoryById = getCategoryById;
 // Create a new category
-const createCategory = async (req, res) => {
+export const createCategory = async (req, res) => {
     try {
         const { name, description } = req.body;
         // Validate required fields
@@ -59,7 +51,7 @@ const createCategory = async (req, res) => {
             });
         }
         // Check if category already exists (case insensitive)
-        const existingCategory = await Category_1.default.findOne({
+        const existingCategory = await Category.findOne({
             name: { $regex: new RegExp(`^${name}$`, "i") },
         });
         if (existingCategory) {
@@ -68,7 +60,7 @@ const createCategory = async (req, res) => {
                 error: "Category with this name already exists",
             });
         }
-        const category = new Category_1.default({
+        const category = new Category({
             name: name.trim(),
             description: description || "",
         });
@@ -86,13 +78,12 @@ const createCategory = async (req, res) => {
         });
     }
 };
-exports.createCategory = createCategory;
 // Update a category
-const updateCategory = async (req, res) => {
+export const updateCategory = async (req, res) => {
     try {
         const { name, description } = req.body;
         const categoryId = req.params.id;
-        const category = await Category_1.default.findById(categoryId);
+        const category = await Category.findById(categoryId);
         if (!category) {
             return res.status(404).json({
                 success: false,
@@ -101,7 +92,7 @@ const updateCategory = async (req, res) => {
         }
         // Check if new name conflicts with existing category
         if (name && name !== category.name) {
-            const existingCategory = await Category_1.default.findOne({
+            const existingCategory = await Category.findOne({
                 name: { $regex: new RegExp(`^${name}$`, "i") },
                 _id: { $ne: categoryId },
             });
@@ -130,11 +121,10 @@ const updateCategory = async (req, res) => {
         });
     }
 };
-exports.updateCategory = updateCategory;
 // Delete a category
-const deleteCategory = async (req, res) => {
+export const deleteCategory = async (req, res) => {
     try {
-        const category = await Category_1.default.findById(req.params.id);
+        const category = await Category.findById(req.params.id);
         if (!category) {
             return res.status(404).json({
                 success: false,
@@ -166,4 +156,3 @@ const deleteCategory = async (req, res) => {
         });
     }
 };
-exports.deleteCategory = deleteCategory;

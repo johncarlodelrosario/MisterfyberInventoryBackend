@@ -1,13 +1,7 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateProfile = exports.logout = exports.getMe = exports.getProfile = exports.login = exports.register = void 0;
-const bcryptjs_1 = __importDefault(require("bcryptjs"));
-const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-const User_1 = __importDefault(require("../models/User"));
-const register = async (req, res) => {
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import User from "../models/User";
+export const register = async (req, res) => {
     try {
         console.log("Registration request body:", req.body);
         const { username, email, password, role } = req.body;
@@ -19,7 +13,7 @@ const register = async (req, res) => {
             });
         }
         // Check if user exists
-        const existingUser = await User_1.default.findOne({
+        const existingUser = await User.findOne({
             $or: [{ email }, { username }],
         });
         if (existingUser) {
@@ -29,10 +23,10 @@ const register = async (req, res) => {
             });
         }
         // Hash password
-        const salt = await bcryptjs_1.default.genSalt(10);
-        const hashedPassword = await bcryptjs_1.default.hash(password, salt);
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
         // Create user
-        const user = new User_1.default({
+        const user = new User({
             username: username.trim(),
             email: email.trim().toLowerCase(),
             password: hashedPassword,
@@ -41,7 +35,7 @@ const register = async (req, res) => {
         await user.save();
         console.log("User created successfully:", user.username);
         // Generate token
-        const token = jsonwebtoken_1.default.sign({ userId: user._id }, process.env.JWT_SECRET || "your-secret-key", { expiresIn: "7d" });
+        const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET || "your-secret-key", { expiresIn: "7d" });
         res.status(201).json({
             success: true,
             token,
@@ -77,8 +71,7 @@ const register = async (req, res) => {
         });
     }
 };
-exports.register = register;
-const login = async (req, res) => {
+export const login = async (req, res) => {
     try {
         console.log("Login request body:", req.body);
         const { username, password } = req.body;
@@ -90,7 +83,7 @@ const login = async (req, res) => {
             });
         }
         // Find user by username (or email) - FIXED: explicitly include password field
-        const user = await User_1.default.findOne({
+        const user = await User.findOne({
             $or: [{ username }, { email: username }],
         }).select("+password");
         if (!user) {
@@ -113,7 +106,7 @@ const login = async (req, res) => {
         }
         console.log("Login successful for user:", user.username);
         // Generate token
-        const token = jsonwebtoken_1.default.sign({ userId: user._id }, process.env.JWT_SECRET || "your-secret-key", { expiresIn: "7d" });
+        const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET || "your-secret-key", { expiresIn: "7d" });
         res.json({
             success: true,
             token,
@@ -133,8 +126,7 @@ const login = async (req, res) => {
         });
     }
 };
-exports.login = login;
-const getProfile = async (req, res) => {
+export const getProfile = async (req, res) => {
     try {
         console.log("Get profile request for user:", req.user?.username);
         if (!req.user) {
@@ -143,7 +135,7 @@ const getProfile = async (req, res) => {
                 error: "User not authenticated",
             });
         }
-        const user = await User_1.default.findById(req.user._id).select("-password");
+        const user = await User.findById(req.user._id).select("-password");
         if (!user) {
             return res.status(404).json({
                 success: false,
@@ -170,8 +162,7 @@ const getProfile = async (req, res) => {
         });
     }
 };
-exports.getProfile = getProfile;
-const getMe = async (req, res) => {
+export const getMe = async (req, res) => {
     try {
         console.log("Get me request for user:", req.user?.username);
         if (!req.user) {
@@ -180,7 +171,7 @@ const getMe = async (req, res) => {
                 error: "User not authenticated",
             });
         }
-        const user = await User_1.default.findById(req.user._id).select("-password");
+        const user = await User.findById(req.user._id).select("-password");
         if (!user) {
             return res.status(404).json({
                 success: false,
@@ -207,8 +198,7 @@ const getMe = async (req, res) => {
         });
     }
 };
-exports.getMe = getMe;
-const logout = async (req, res) => {
+export const logout = async (req, res) => {
     try {
         res.json({
             success: true,
@@ -223,8 +213,7 @@ const logout = async (req, res) => {
         });
     }
 };
-exports.logout = logout;
-const updateProfile = async (req, res) => {
+export const updateProfile = async (req, res) => {
     try {
         console.log("Update profile request for user:", req.user?.username);
         if (!req.user) {
@@ -234,7 +223,7 @@ const updateProfile = async (req, res) => {
             });
         }
         const { username, email, password } = req.body;
-        const user = await User_1.default.findById(req.user._id);
+        const user = await User.findById(req.user._id);
         if (!user) {
             return res.status(404).json({
                 success: false,
@@ -244,7 +233,7 @@ const updateProfile = async (req, res) => {
         // Update fields
         if (username) {
             // Check if username is taken
-            const existingUser = await User_1.default.findOne({
+            const existingUser = await User.findOne({
                 username,
                 _id: { $ne: user._id },
             });
@@ -258,7 +247,7 @@ const updateProfile = async (req, res) => {
         }
         if (email) {
             // Check if email is taken
-            const existingUser = await User_1.default.findOne({
+            const existingUser = await User.findOne({
                 email: email.toLowerCase(),
                 _id: { $ne: user._id },
             });
@@ -271,8 +260,8 @@ const updateProfile = async (req, res) => {
             user.email = email.toLowerCase();
         }
         if (password) {
-            const salt = await bcryptjs_1.default.genSalt(10);
-            user.password = await bcryptjs_1.default.hash(password, salt);
+            const salt = await bcrypt.genSalt(10);
+            user.password = await bcrypt.hash(password, salt);
         }
         await user.save();
         console.log("Profile updated for user:", user.username);
@@ -296,4 +285,3 @@ const updateProfile = async (req, res) => {
         });
     }
 };
-exports.updateProfile = updateProfile;
