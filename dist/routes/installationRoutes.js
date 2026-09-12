@@ -15,4 +15,3 @@ router.get("/inventory/:inventoryId/site/:siteId", getSiteInventoryDetails);
 router.get("/inventory/site/:siteId", getInventoryBySite);
 router.get("/inventory/site/:siteId/value", getInventoryValueBySite);
 export default router;
-//# sourceMappingURL=installationRoutes.js.map

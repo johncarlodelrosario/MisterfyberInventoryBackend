@@ -25,4 +25,3 @@ BudgetSchema.pre("save", function (next) {
     next();
 });
 export default mongoose.model("Budget", BudgetSchema);
-//# sourceMappingURL=Budget.js.map

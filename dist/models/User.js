@@ -60,4 +60,3 @@ UserSchema.set("toJSON", {
 // Create and export the model properly
 const User = mongoose.models.User || mongoose.model("User", UserSchema);
 export default User;
-//# sourceMappingURL=User.js.map

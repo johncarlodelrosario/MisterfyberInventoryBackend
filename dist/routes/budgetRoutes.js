@@ -8,4 +8,3 @@ router.post("/", isAdmin, createOrUpdateBudget);
 router.get("/", cacheMiddleware(300), getBudget);
 router.post("/transaction", isAdmin, addTransaction);
 export default router;
-//# sourceMappingURL=budgetRoutes.js.map

@@ -56,4 +56,3 @@ export const cacheMiddleware = (duration = 300) => {
         next();
     };
 };
-//# sourceMappingURL=cache.js.map

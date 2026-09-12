@@ -75,4 +75,3 @@ export const addTransaction = async (req, res) => {
         res.status(500).json({ error: "Error adding transaction" });
     }
 };
-//# sourceMappingURL=budgetController.js.map

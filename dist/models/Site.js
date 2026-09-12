@@ -32,4 +32,3 @@ const SiteSchema = new Schema({
 SiteSchema.index({ name: 1 });
 const Site = mongoose.model("Site", SiteSchema);
 export default Site;
-//# sourceMappingURL=Site.js.map

@@ -11,4 +11,3 @@ router.get("/me", authenticate, getMe);
 router.post("/logout", authenticate, logout);
 router.put("/profile", authenticate, updateProfile);
 export default router;
-//# sourceMappingURL=authRoutes.js.map

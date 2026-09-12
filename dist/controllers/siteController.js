@@ -197,4 +197,3 @@ export const deleteSite = async (req, res) => {
         });
     }
 };
-//# sourceMappingURL=siteController.js.map

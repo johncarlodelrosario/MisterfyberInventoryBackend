@@ -204,4 +204,3 @@ export const generatePDFReport = async (req, res) => {
         res.status(500).json({ error: "Error generating PDF report" });
     }
 };
-//# sourceMappingURL=reportController.js.map
