@@ -13,3 +13,4 @@ const CategorySchema = new Schema({
     },
 }, { timestamps: true });
 export default mongoose.model("Category", CategorySchema);
+//# sourceMappingURL=Category.js.map

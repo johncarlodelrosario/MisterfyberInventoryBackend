@@ -304,3 +304,4 @@ const formatInventoryResponse = (inventory) => {
         updatedAt: inventory.updatedAt,
     };
 };
+//# sourceMappingURL=inventoryController.js.map

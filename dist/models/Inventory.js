@@ -46,3 +46,4 @@ InventorySchema.pre("save", function (next) {
     next();
 });
 export default mongoose.model("Inventory", InventorySchema);
+//# sourceMappingURL=Inventory.js.map

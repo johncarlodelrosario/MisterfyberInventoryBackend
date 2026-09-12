@@ -285,3 +285,4 @@ export const updateProfile = async (req, res) => {
         });
     }
 };
+//# sourceMappingURL=authController.js.map

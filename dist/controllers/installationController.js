@@ -510,3 +510,4 @@ export const getInventoryValueBySite = async (req, res) => {
         res.status(500).json({ error: "Error fetching inventory value by site" });
     }
 };
+//# sourceMappingURL=installationController.js.map

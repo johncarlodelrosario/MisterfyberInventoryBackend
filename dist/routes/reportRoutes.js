@@ -6,3 +6,4 @@ router.use(authenticate);
 router.get('/excel', generateExcelReport);
 router.get('/pdf', generatePDFReport);
 export default router;
+//# sourceMappingURL=reportRoutes.js.map

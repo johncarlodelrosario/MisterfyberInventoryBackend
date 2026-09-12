@@ -11,3 +11,4 @@ router.put("/:id", isAdmin, updateInventory);
 router.delete("/:id", isAdmin, deleteInventory);
 router.post("/:id/deduct", isAdmin, deductInventory);
 export default router;
+//# sourceMappingURL=inventoryRoutes.js.map

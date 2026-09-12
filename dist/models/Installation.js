@@ -40,3 +40,4 @@ InstallationSchema.index({ siteId: 1, status: 1 });
 InstallationSchema.index({ installedBy: 1 });
 InstallationSchema.index({ scheduledDate: 1 }, { sparse: true });
 export default mongoose.model("Installation", InstallationSchema);
+//# sourceMappingURL=Installation.js.map

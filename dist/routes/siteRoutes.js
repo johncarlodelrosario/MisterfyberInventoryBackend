@@ -12,3 +12,4 @@ router.post("/", isAdmin, createSite);
 router.put("/:id", isAdmin, updateSite);
 router.delete("/:id", isAdmin, deleteSite);
 export default router;
+//# sourceMappingURL=siteRoutes.js.map

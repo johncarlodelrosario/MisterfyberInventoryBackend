@@ -11,3 +11,4 @@ router.post("/", authenticate, createCategory);
 router.put("/:id", authenticate, updateCategory);
 router.delete("/:id", authenticate, deleteCategory);
 export default router;
+//# sourceMappingURL=categoryRoutes.js.map
