@@ -4,7 +4,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.updateProfile = exports.logout = exports.getMe = exports.getProfile = exports.login = exports.register = void 0;
-const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const User_1 = __importDefault(require("../models/User"));
 const register = async (req, res) => {
@@ -28,14 +27,11 @@ const register = async (req, res) => {
                 error: "Username or email already exists",
             });
         }
-        // Hash password
-        const salt = await bcryptjs_1.default.genSalt(10);
-        const hashedPassword = await bcryptjs_1.default.hash(password, salt);
-        // Create user
+        // ✅ DO NOT hash here — the User model's pre('save') hook handles it
         const user = new User_1.default({
             username: username.trim(),
             email: email.trim().toLowerCase(),
-            password: hashedPassword,
+            password, // plain password — model will hash it
             role: role || "user",
         });
         await user.save();
@@ -55,7 +51,6 @@ const register = async (req, res) => {
     }
     catch (error) {
         console.error("Registration error:", error);
-        // Handle validation errors
         if (error.name === "ValidationError") {
             return res.status(400).json({
                 success: false,
@@ -63,7 +58,6 @@ const register = async (req, res) => {
                 details: error.errors,
             });
         }
-        // Handle duplicate key error
         if (error.code === 11000) {
             return res.status(400).json({
                 success: false,
@@ -82,14 +76,13 @@ const login = async (req, res) => {
     try {
         console.log("Login request body:", req.body);
         const { username, password } = req.body;
-        // Validate required fields
         if (!username || !password) {
             return res.status(400).json({
                 success: false,
                 error: "Username and password are required",
             });
         }
-        // Find user by username (or email) - FIXED: explicitly include password field
+        // Find user by username or email — explicitly include password
         const user = await User_1.default.findOne({
             $or: [{ username }, { email: username }],
         }).select("+password");
@@ -101,8 +94,6 @@ const login = async (req, res) => {
             });
         }
         console.log("User found:", user.username);
-        console.log("User has comparePassword method:", typeof user.comparePassword === "function");
-        // Check password using the comparePassword method
         const isMatch = await user.comparePassword(password);
         if (!isMatch) {
             console.log("Invalid password for user:", user.username);
@@ -112,7 +103,6 @@ const login = async (req, res) => {
             });
         }
         console.log("Login successful for user:", user.username);
-        // Generate token
         const token = jsonwebtoken_1.default.sign({ userId: user._id }, process.env.JWT_SECRET || "your-secret-key", { expiresIn: "7d" });
         res.json({
             success: true,
@@ -136,7 +126,6 @@ const login = async (req, res) => {
 exports.login = login;
 const getProfile = async (req, res) => {
     try {
-        console.log("Get profile request for user:", req.user?.username);
         if (!req.user) {
             return res.status(401).json({
                 success: false,
@@ -173,7 +162,6 @@ const getProfile = async (req, res) => {
 exports.getProfile = getProfile;
 const getMe = async (req, res) => {
     try {
-        console.log("Get me request for user:", req.user?.username);
         if (!req.user) {
             return res.status(401).json({
                 success: false,
@@ -226,7 +214,6 @@ const logout = async (req, res) => {
 exports.logout = logout;
 const updateProfile = async (req, res) => {
     try {
-        console.log("Update profile request for user:", req.user?.username);
         if (!req.user) {
             return res.status(401).json({
                 success: false,
@@ -234,16 +221,14 @@ const updateProfile = async (req, res) => {
             });
         }
         const { username, email, password } = req.body;
-        const user = await User_1.default.findById(req.user._id);
+        const user = await User_1.default.findById(req.user._id).select("+password");
         if (!user) {
             return res.status(404).json({
                 success: false,
                 error: "User not found",
             });
         }
-        // Update fields
         if (username) {
-            // Check if username is taken
             const existingUser = await User_1.default.findOne({
                 username,
                 _id: { $ne: user._id },
@@ -257,7 +242,6 @@ const updateProfile = async (req, res) => {
             user.username = username.trim();
         }
         if (email) {
-            // Check if email is taken
             const existingUser = await User_1.default.findOne({
                 email: email.toLowerCase(),
                 _id: { $ne: user._id },
@@ -271,8 +255,8 @@ const updateProfile = async (req, res) => {
             user.email = email.toLowerCase();
         }
         if (password) {
-            const salt = await bcryptjs_1.default.genSalt(10);
-            user.password = await bcryptjs_1.default.hash(password, salt);
+            // ✅ Set plain password — pre('save') hook will hash it once
+            user.password = password;
         }
         await user.save();
         console.log("Profile updated for user:", user.username);
