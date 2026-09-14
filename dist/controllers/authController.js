@@ -6,18 +6,19 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.updateProfile = exports.logout = exports.getMe = exports.getProfile = exports.login = exports.register = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const User_1 = __importDefault(require("../models/User"));
+// ─────────────────────────────────────────────────────────────
+// REGISTER
+// ─────────────────────────────────────────────────────────────
 const register = async (req, res) => {
     try {
         console.log("Registration request body:", req.body);
         const { username, email, password, role } = req.body;
-        // Validate required fields
         if (!username || !email || !password) {
             return res.status(400).json({
                 success: false,
                 error: "Username, email, and password are required",
             });
         }
-        // Check if user exists
         const existingUser = await User_1.default.findOne({
             $or: [{ email }, { username }],
         });
@@ -27,16 +28,15 @@ const register = async (req, res) => {
                 error: "Username or email already exists",
             });
         }
-        // ✅ DO NOT hash here — the User model's pre('save') hook handles it
+        // ⚠️ DO NOT hash here. The User model's pre('save') hook hashes it ONCE.
         const user = new User_1.default({
             username: username.trim(),
             email: email.trim().toLowerCase(),
-            password, // plain password — model will hash it
+            password, // plain password — model hashes it
             role: role || "user",
         });
         await user.save();
         console.log("User created successfully:", user.username);
-        // Generate token
         const token = jsonwebtoken_1.default.sign({ userId: user._id }, process.env.JWT_SECRET || "your-secret-key", { expiresIn: "7d" });
         res.status(201).json({
             success: true,
@@ -72,6 +72,9 @@ const register = async (req, res) => {
     }
 };
 exports.register = register;
+// ─────────────────────────────────────────────────────────────
+// LOGIN
+// ─────────────────────────────────────────────────────────────
 const login = async (req, res) => {
     try {
         console.log("Login request body:", req.body);
@@ -82,7 +85,7 @@ const login = async (req, res) => {
                 error: "Username and password are required",
             });
         }
-        // Find user by username or email — explicitly include password
+        // Must .select("+password") — password has select:false in schema
         const user = await User_1.default.findOne({
             $or: [{ username }, { email: username }],
         }).select("+password");
@@ -94,6 +97,7 @@ const login = async (req, res) => {
             });
         }
         console.log("User found:", user.username);
+        console.log("Stored password length:", user.password?.length);
         const isMatch = await user.comparePassword(password);
         if (!isMatch) {
             console.log("Invalid password for user:", user.username);
@@ -124,6 +128,9 @@ const login = async (req, res) => {
     }
 };
 exports.login = login;
+// ─────────────────────────────────────────────────────────────
+// GET PROFILE
+// ─────────────────────────────────────────────────────────────
 const getProfile = async (req, res) => {
     try {
         if (!req.user) {
@@ -160,6 +167,9 @@ const getProfile = async (req, res) => {
     }
 };
 exports.getProfile = getProfile;
+// ─────────────────────────────────────────────────────────────
+// GET ME
+// ─────────────────────────────────────────────────────────────
 const getMe = async (req, res) => {
     try {
         if (!req.user) {
@@ -196,7 +206,10 @@ const getMe = async (req, res) => {
     }
 };
 exports.getMe = getMe;
-const logout = async (req, res) => {
+// ─────────────────────────────────────────────────────────────
+// LOGOUT
+// ─────────────────────────────────────────────────────────────
+const logout = async (_req, res) => {
     try {
         res.json({
             success: true,
@@ -212,6 +225,9 @@ const logout = async (req, res) => {
     }
 };
 exports.logout = logout;
+// ─────────────────────────────────────────────────────────────
+// UPDATE PROFILE
+// ─────────────────────────────────────────────────────────────
 const updateProfile = async (req, res) => {
     try {
         if (!req.user) {
@@ -255,7 +271,7 @@ const updateProfile = async (req, res) => {
             user.email = email.toLowerCase();
         }
         if (password) {
-            // ✅ Set plain password — pre('save') hook will hash it once
+            // ✅ Plain password — pre('save') hook will hash it ONCE.
             user.password = password;
         }
         await user.save();

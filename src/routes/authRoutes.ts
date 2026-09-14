@@ -15,7 +15,7 @@ const router = Router();
 router.post("/register", register);
 router.post("/login", login);
 
-// Protected routes (require authentication)
+// Protected routes
 router.get("/profile", authenticate, getProfile);
 router.get("/me", authenticate, getMe);
 router.post("/logout", authenticate, logout);

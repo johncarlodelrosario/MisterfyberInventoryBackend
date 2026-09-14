@@ -43,6 +43,7 @@ const UserSchema = new Schema<IUser>(
   },
 );
 
+// ✅ Hashes password ONLY when it's new or modified — exactly once
 UserSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
 
@@ -67,7 +68,7 @@ UserSchema.methods.comparePassword = async function (
 };
 
 UserSchema.set("toJSON", {
-  transform: function (doc, ret) {
+  transform: function (_doc, ret) {
     delete ret.password;
     return ret;
   },

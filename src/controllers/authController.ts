@@ -1,16 +1,17 @@
 import { Request, Response } from "express";
-import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/User";
 import { AuthRequest } from "../middleware/auth";
 
+// ─────────────────────────────────────────────────────────────
+// REGISTER
+// ─────────────────────────────────────────────────────────────
 export const register = async (req: Request, res: Response) => {
   try {
     console.log("Registration request body:", req.body);
 
     const { username, email, password, role } = req.body;
 
-    // Validate required fields
     if (!username || !email || !password) {
       return res.status(400).json({
         success: false,
@@ -18,7 +19,6 @@ export const register = async (req: Request, res: Response) => {
       });
     }
 
-    // Check if user exists
     const existingUser = await User.findOne({
       $or: [{ email }, { username }],
     });
@@ -30,18 +30,17 @@ export const register = async (req: Request, res: Response) => {
       });
     }
 
-    // ✅ DO NOT hash here — the User model's pre('save') hook handles it
+    // ⚠️ DO NOT hash here. The User model's pre('save') hook hashes it ONCE.
     const user = new User({
       username: username.trim(),
       email: email.trim().toLowerCase(),
-      password, // plain password — model will hash it
+      password, // plain password — model hashes it
       role: role || "user",
     });
 
     await user.save();
     console.log("User created successfully:", user.username);
 
-    // Generate token
     const token = jwt.sign(
       { userId: user._id },
       process.env.JWT_SECRET || "your-secret-key",
@@ -84,6 +83,9 @@ export const register = async (req: Request, res: Response) => {
   }
 };
 
+// ─────────────────────────────────────────────────────────────
+// LOGIN
+// ─────────────────────────────────────────────────────────────
 export const login = async (req: Request, res: Response) => {
   try {
     console.log("Login request body:", req.body);
@@ -97,7 +99,7 @@ export const login = async (req: Request, res: Response) => {
       });
     }
 
-    // Find user by username or email — explicitly include password
+    // Must .select("+password") — password has select:false in schema
     const user = await User.findOne({
       $or: [{ username }, { email: username }],
     }).select("+password");
@@ -111,6 +113,7 @@ export const login = async (req: Request, res: Response) => {
     }
 
     console.log("User found:", user.username);
+    console.log("Stored password length:", user.password?.length);
 
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
@@ -148,6 +151,9 @@ export const login = async (req: Request, res: Response) => {
   }
 };
 
+// ─────────────────────────────────────────────────────────────
+// GET PROFILE
+// ─────────────────────────────────────────────────────────────
 export const getProfile = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) {
@@ -185,6 +191,9 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
   }
 };
 
+// ─────────────────────────────────────────────────────────────
+// GET ME
+// ─────────────────────────────────────────────────────────────
 export const getMe = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) {
@@ -222,7 +231,10 @@ export const getMe = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const logout = async (req: Request, res: Response) => {
+// ─────────────────────────────────────────────────────────────
+// LOGOUT
+// ─────────────────────────────────────────────────────────────
+export const logout = async (_req: Request, res: Response) => {
   try {
     res.json({
       success: true,
@@ -237,6 +249,9 @@ export const logout = async (req: Request, res: Response) => {
   }
 };
 
+// ─────────────────────────────────────────────────────────────
+// UPDATE PROFILE
+// ─────────────────────────────────────────────────────────────
 export const updateProfile = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) {
@@ -285,7 +300,7 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
     }
 
     if (password) {
-      // ✅ Set plain password — pre('save') hook will hash it once
+      // ✅ Plain password — pre('save') hook will hash it ONCE.
       user.password = password;
     }
 

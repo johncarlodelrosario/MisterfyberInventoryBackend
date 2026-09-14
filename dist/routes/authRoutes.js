@@ -7,7 +7,7 @@ const router = (0, express_1.Router)();
 // Public routes
 router.post("/register", authController_1.register);
 router.post("/login", authController_1.login);
-// Protected routes (require authentication)
+// Protected routes
 router.get("/profile", auth_1.authenticate, authController_1.getProfile);
 router.get("/me", auth_1.authenticate, authController_1.getMe);
 router.post("/logout", auth_1.authenticate, authController_1.logout);

@@ -66,6 +66,7 @@ const UserSchema = new mongoose_1.Schema({
 }, {
     timestamps: true,
 });
+// ✅ Hashes password ONLY when it's new or modified — exactly once
 UserSchema.pre("save", async function (next) {
     if (!this.isModified("password"))
         return next();
@@ -88,7 +89,7 @@ UserSchema.methods.comparePassword = async function (candidatePassword) {
     }
 };
 UserSchema.set("toJSON", {
-    transform: function (doc, ret) {
+    transform: function (_doc, ret) {
         delete ret.password;
         return ret;
     },
