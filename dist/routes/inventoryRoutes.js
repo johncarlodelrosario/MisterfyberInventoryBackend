@@ -12,4 +12,5 @@ router.get("/:id", inventoryController_1.getInventoryById);
 router.put("/:id", auth_1.isAdmin, inventoryController_1.updateInventory);
 router.delete("/:id", auth_1.isAdmin, inventoryController_1.deleteInventory);
 router.post("/:id/deduct", auth_1.isAdmin, inventoryController_1.deductInventory);
+router.post("/:id/move", auth_1.isAdmin, inventoryController_1.moveInventory);
 exports.default = router;

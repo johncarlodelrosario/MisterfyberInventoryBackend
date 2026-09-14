@@ -315,6 +315,101 @@ export const deductInventory = async (req: AuthRequest, res: Response) => {
   }
 };
 
+export const moveInventory = async (req: AuthRequest, res: Response) => {
+  try {
+    const { fromSiteId, toSiteId, quantity } = req.body;
+    const inventory = await Inventory.findById(req.params.id);
+
+    if (!inventory) {
+      return res.status(404).json({
+        success: false,
+        error: "Inventory item not found",
+      });
+    }
+
+    // Validate fromSiteId and toSiteId are different
+    if (fromSiteId === toSiteId) {
+      return res.status(400).json({
+        success: false,
+        error: "Source and destination sites must be different",
+      });
+    }
+
+    // Validate quantity is a positive number
+    const moveQuantity = Number(quantity);
+    if (!moveQuantity || moveQuantity <= 0) {
+      return res.status(400).json({
+        success: false,
+        error: "Quantity must be a positive number",
+      });
+    }
+
+    // Check if source site exists in this inventory
+    const fromSiteObjectId = new mongoose.Types.ObjectId(fromSiteId);
+    const fromSiteExists = inventory.siteIds.some((id) =>
+      id.equals(fromSiteObjectId),
+    );
+
+    if (!fromSiteExists) {
+      return res.status(404).json({
+        success: false,
+        error: "Source site not found for this inventory item",
+      });
+    }
+
+    // Check if destination site exists in this inventory
+    const toSiteObjectId = new mongoose.Types.ObjectId(toSiteId);
+    const toSiteExists = inventory.siteIds.some((id) =>
+      id.equals(toSiteObjectId),
+    );
+
+    if (!toSiteExists) {
+      return res.status(404).json({
+        success: false,
+        error: "Destination site not found for this inventory item",
+      });
+    }
+
+    // Check if source site has sufficient quantity
+    const fromQuantity = inventory.quantities.get(fromSiteId) || 0;
+    if (fromQuantity < moveQuantity) {
+      return res.status(400).json({
+        success: false,
+        error: `Insufficient quantity at source site. Available: ${fromQuantity}`,
+      });
+    }
+
+    // Perform the move
+    const toQuantity = inventory.quantities.get(toSiteId) || 0;
+
+    inventory.quantities.set(fromSiteId, fromQuantity - moveQuantity);
+    inventory.quantities.set(toSiteId, toQuantity + moveQuantity);
+    inventory.lastUpdated = new Date();
+
+    await inventory.save();
+
+    // Populate references for response
+    await inventory.populate("categoryId", "name");
+    await inventory.populate("siteIds", "name");
+
+    const formattedInventory = formatInventoryResponse(inventory);
+
+    res.json({
+      success: true,
+      message: "Inventory moved successfully",
+      inventory: formattedInventory,
+      fromSiteRemaining: inventory.quantities.get(fromSiteId),
+      toSiteNewQuantity: inventory.quantities.get(toSiteId),
+    });
+  } catch (error) {
+    console.error("Error moving inventory:", error);
+    res.status(500).json({
+      success: false,
+      error: "Error moving inventory",
+    });
+  }
+};
+
 // Helper function to format inventory response
 const formatInventoryResponse = (inventory: any) => {
   const sitesData = inventory.siteIds.map((site: any) => {

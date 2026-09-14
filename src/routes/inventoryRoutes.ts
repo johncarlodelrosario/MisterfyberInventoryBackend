@@ -7,6 +7,7 @@ import {
   updateInventory,
   deleteInventory,
   deductInventory,
+  moveInventory,
 } from "../controllers/inventoryController";
 import { authenticate, isAdmin } from "../middleware/auth";
 
@@ -20,5 +21,6 @@ router.get("/:id", getInventoryById);
 router.put("/:id", isAdmin, updateInventory);
 router.delete("/:id", isAdmin, deleteInventory);
 router.post("/:id/deduct", isAdmin, deductInventory);
+router.post("/:id/move", isAdmin, moveInventory);
 
 export default router;
